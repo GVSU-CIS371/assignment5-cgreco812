@@ -145,7 +145,75 @@ export const useBeverageStore = defineStore("BeverageStore", {
         this.currentSyrup
       );
     },
-    makeBeverage() {},
-    setUser(user: User | null) {},
+    async makeBeverage() {
+      if(this.user == null){
+        return "No user logged in, please sign in";
+      }
+
+      if (
+        !this.currentName ||
+        !this.currentTemp ||
+        !this.currentBase ||
+        !this.currentSyrup ||
+        !this.currentCreamer
+      ) {
+        return "Please complete all beverage options and the name before making a beverage.";
+      }
+
+      const id = this.user.uid+"_"+Date.now();
+
+      const beverage: BeverageType = {
+        id,
+        name: this.currentName,
+        temp: this.currentTemp,
+        base: this.currentBase,
+        syrup: this.currentSyrup,
+        creamer: this.currentCreamer,
+        uid: this.user.uid,
+      };
+
+      try {
+        await setDoc(doc(db, "beverages", id), beverage);
+
+        this.currentBeverage = beverage;
+
+        return "Beverage "+this.currentName+" made successfully!";
+      } catch (e) {
+        return "Error creating beverage. Please try again.";
+      }
+    },
+    setUser(user: User | null) {
+      this.user = user;
+
+      if (this.snapshotUnsubscribe) {
+        this.snapshotUnsubscribe();
+        this.snapshotUnsubscribe = null;
+      }
+
+      if (!user) {
+        this.beverages = [];
+        this.currentBeverage = null;
+        return;
+      }
+      const beveragesRef = collection(db, "beverages");
+      const q = query(beveragesRef, where("uid", "==", user.uid));
+
+      this.snapshotUnsubscribe = onSnapshot(q, (snapshot) => {
+        const bevList: BeverageType[] = snapshot.docs.map((d) => {
+          const data = d.data();
+          return {
+            id: d.id,                    
+            uid: data.uid as string,       
+            name: data.name as string,
+            temp: data.temp as string,
+            base: data.base as BaseBeverageType,
+            syrup: data.syrup as SyrupType,
+            creamer: data.creamer as CreamerType,
+          };
+        });
+
+        this.beverages = bevList;
+      });
+    },
   },
 });
