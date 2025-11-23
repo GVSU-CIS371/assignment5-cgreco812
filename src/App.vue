@@ -82,7 +82,7 @@
       type="text"
       placeholder="Beverage Name"
     />
-    <button @click="handleMakeBeverage">🍺 Make Beverage</button>
+    <button @click="handleMakeBeverage" :disabled="!beverageStore.user">🍺 Make Beverage</button>
 
     <p v-if="message" class="status-message">
       {{ message }}
@@ -127,6 +127,7 @@ const withGoogle = async () => {
     console.log(auth);
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
+    showMessage("Signed in with Google");
   }catch(err){
     showMessage("Failed to signin:"+err);
   }
@@ -144,6 +145,7 @@ onAuthStateChanged(auth, (user) => {
 function logOut() {
   if(auth){
     signOut(auth);
+    showMessage("Signed out.")
   }
 }
 
